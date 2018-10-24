@@ -9,8 +9,8 @@ import org.apache.poi.ss.usermodel.Workbook;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Random;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 多线程读取excel到queue中，然后都多线程打印或者写入到新的文件中
@@ -26,44 +26,19 @@ public class Main {
      */
     ArrayBlockingQueue<ExcelInfo> queue = new ArrayBlockingQueue(1000);
     /**
-     * 下一次读取索引
-     */
-    private volatile int index = 0;
-    /**
      * 本页最大的行号
      */
     private int lastRowNum = 0;
-    /**
-     * 重入锁
-     */
-    private final ReentrantLock lock = new ReentrantLock();
+
     private CountDownLatch countDownLatch = new CountDownLatch(1);
 
-    /**
-     * 同步获取要读取的行号
-     *
-     * @return
-     */
-    public int getIndex() {
-
-        lock.lock();
-        try {
-
-            index += 1;
-            System.out.println("index:" + index);
-            return index;
-        } finally {
-            lock.unlock();
-        }
-
-    }
 
     /**
      * 读取excel
      *
      * @param workbook
      */
-    public void read(Workbook workbook) {
+    public void read(Workbook workbook, int threadNum) {
 
         // 现在默认是第一个 sheet
         Sheet sheet = workbook.getSheetAt(0);
@@ -72,7 +47,7 @@ public class Main {
 
         countDownLatch.countDown();
 
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        ExecutorService executorService = Executors.newFixedThreadPool(threadNum);
 
         for (int i = 0; i < lastRowNum; i++) {
             int finalI = i;
@@ -89,7 +64,8 @@ public class Main {
                 Row row = sheet.getRow(finalI);
 
                 ExcelInfo info = getInfo(row);
-
+                Thread.sleep(500);
+                System.out.println("生产：" + info.toString());
                 // 添加到queue中
                 this.queue.put(info);
 
@@ -103,13 +79,14 @@ public class Main {
 
     }
 
-    private ExcelInfo getInfo(Row row) {
+    private ExcelInfo getInfo(Row row) throws InterruptedException {
 
         Cell cell = row.getCell(2);
         String name = cell.getStringCellValue();
 
         ExcelInfo excelInfo = new ExcelInfo();
         excelInfo.setName(name);
+        System.out.println(queue.size());
 
         return excelInfo;
     }
@@ -119,21 +96,51 @@ public class Main {
      *
      * @return
      */
-    public ExcelInfo getInfo() throws InterruptedException {
+    public void take(Integer threadNum) {
         try {
             countDownLatch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        System.out.println(queue.size());
 
 
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        ExecutorService executorService = Executors.newFixedThreadPool(threadNum);
 
+        for (int i = 0; i < lastRowNum; i++) {
 
-        ExcelInfo take = this.queue.take();
+            executorService.submit(new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
 
-        return take;
+                    try {
+
+                        // 随机 50 到 2000 的毫秒
+                        int min = 50;
+                        int max = 2000;
+                        Random random = new Random();
+
+                        int time = random.nextInt(max) % (max - min + 1) + min;
+
+                        Thread.sleep(time);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    // 获取队列
+                    ExcelInfo take = null;
+                    try {
+                        take = queue.take();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println("消费：" + take.toString());
+
+                    return null;
+                }
+            });
+        }
+
+        executorService.shutdown();
+
     }
 
 
@@ -142,7 +149,7 @@ public class Main {
         // 读取excel
 
         String path = Main.class.getClassLoader().getResource("").getPath() + "temp.xls";
-        System.out.println(path);
+
         File excelFile = new File(path);
         FileInputStream fis = FileUtils.openInputStream(excelFile);
 
@@ -151,11 +158,10 @@ public class Main {
         Main main = new Main();
 
         // 多线程读取
-        main.read(workbook);
+        main.read(workbook, 8);
 
         // 多线程消费
-        ExcelInfo excelInfo = main.queue.take();
-        System.out.println(excelInfo.toString());
+        main.take(2);
     }
 
 }
