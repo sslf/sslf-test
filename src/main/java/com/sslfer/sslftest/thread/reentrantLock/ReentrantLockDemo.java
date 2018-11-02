@@ -1,6 +1,5 @@
 package com.sslfer.sslftest.thread.reentrantLock;
 
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -12,25 +11,44 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ReentrantLockDemo {
 
     private ReentrantLock lock = new ReentrantLock(true);
-    private Condition condition = lock.newCondition();
 
-    private int count = 0;
+    public void test() {
 
+        lock.lock();
 
+        try {
+            System.out.println(Thread.currentThread().getName() + "：开始执行了");
+        } finally {
+            lock.unlock();
+        }
+
+    }
 
 
     public static void main(String[] args) throws InterruptedException {
 
         ReentrantLockDemo demo = new ReentrantLockDemo();
 
-        for (int i = 0; i < 3; i++) {
+        Thread thread1 = new Thread(() -> {
+            demo.test();
+        }, "thread1");
+        thread1.start();
 
+        Thread thread2 = new Thread(() -> {
+            demo.test();
+        }, "thread2");
+        thread2.start();
 
-        }
+        Thread thread3 = new Thread(() -> {
+            demo.test();
+        }, "thread3");
+        thread3.start();
 
-        Thread.sleep(3000);
+        thread1.join();
+        thread2.join();
+        thread3.join();
 
-        System.out.println(demo.count);
+        System.out.println("程序执行完成");
     }
 
 }

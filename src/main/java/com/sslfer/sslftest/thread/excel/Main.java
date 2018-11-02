@@ -65,7 +65,7 @@ public class Main {
 
                 ExcelInfo info = getInfo(row);
                 Thread.sleep(500);
-                System.out.println("生产：" + info.toString());
+                System.out.println(Thread.currentThread().getName() + "生产：" + info.toString());
                 // 添加到queue中
                 this.queue.put(info);
 
@@ -132,7 +132,7 @@ public class Main {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    System.out.println("消费：" + take.toString());
+                    System.out.println(Thread.currentThread().getName() + "消费：" + take.toString());
 
                     return null;
                 }
