@@ -1,4 +1,4 @@
-package com.sslfer.sslftest.thread.reentrantLock;
+package com.sslfer.sslftest.thread.lock;
 
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -34,7 +34,7 @@ public class ReentrantLockDemo {
         }, "thread1");
         thread1.start();
 
-        Thread thread2 = new Thread(() -> {
+        /*Thread thread2 = new Thread(() -> {
             demo.test();
         }, "thread2");
         thread2.start();
@@ -42,11 +42,12 @@ public class ReentrantLockDemo {
         Thread thread3 = new Thread(() -> {
             demo.test();
         }, "thread3");
-        thread3.start();
+        thread3.start();*/
 
         thread1.join();
-        thread2.join();
-        thread3.join();
+        /*thread2.join();
+        thread3.join();*/
+
 
         System.out.println("程序执行完成");
     }

@@ -1,4 +1,4 @@
-package com.sslfer.sslftest.thread.countDownLatch;
+package com.sslfer.sslftest.thread.sync;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
